@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/ryanwholey/terraform-provider-pihole/internal/pihole"
+	"github.com/mhaii/terraform-provider-pihole/internal/pihole"
 )
 
 // Config defines the configuration options for the Pi-hole client

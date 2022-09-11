@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ryanwholey/go-pihole"
+	"github.com/mhaii/go-pihole"
 )
 
 type DNSRecordsListResponse struct {

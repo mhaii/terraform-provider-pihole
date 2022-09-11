@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/ryanwholey/terraform-provider-pihole/internal/pihole"
+	"github.com/mhaii/terraform-provider-pihole/internal/pihole"
 )
 
 // dataSourceGroups returns all Pi-hole groups, including the default group

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	pihole "github.com/ryanwholey/go-pihole"
+	pihole "github.com/mhaii/go-pihole"
 )
 
 type CNAMERecordsListResponse struct {

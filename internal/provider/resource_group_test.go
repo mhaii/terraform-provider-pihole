@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/ryanwholey/terraform-provider-pihole/internal/pihole"
+	"github.com/mhaii/terraform-provider-pihole/internal/pihole"
 )
 
 func TestAccGroups(t *testing.T) {

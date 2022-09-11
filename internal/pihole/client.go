@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	pihole "github.com/ryanwholey/go-pihole"
+	pihole "github.com/mhaii/go-pihole"
 )
 
 type Config struct {
@@ -58,7 +58,7 @@ func New(config Config) *Client {
 	}
 
 	if config.APIToken != "" {
-		client.tokenClient = pihole.New(pihole.Config{
+		client.tokenClient, _ = pihole.New(pihole.Config{
 			BaseURL:    config.URL,
 			APIToken:   config.APIToken,
 			HttpClient: client.client,
