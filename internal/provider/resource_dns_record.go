@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -53,7 +55,7 @@ func resourceDNSRecordCreate(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 
-	d.SetId(domain)
+	d.SetId(fmt.Sprintf("%s_%s", domain, ip))
 
 	return diags
 }
@@ -65,7 +67,8 @@ func resourceDNSRecordRead(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.Errorf("Could not load client in resource request")
 	}
 
-	record, err := client.GetDNSRecord(ctx, d.Id())
+	id := strings.Split(d.Id(), "_")
+	records, err := client.GetDNSRecordList(ctx, d.Id())
 	if err != nil {
 		if _, ok := err.(*pihole.NotFoundError); ok {
 			d.SetId("")
@@ -73,6 +76,17 @@ func resourceDNSRecordRead(ctx context.Context, d *schema.ResourceData, meta int
 		}
 
 		return diag.FromErr(err)
+	}
+
+	var record *pihole.DNSRecord
+	for _, r := range records {
+		if r.IP == id[1] {
+			record = r
+		}
+	}
+	if record == nil {
+		d.SetId("")
+		return nil
 	}
 
 	if err = d.Set("domain", record.Domain); err != nil {

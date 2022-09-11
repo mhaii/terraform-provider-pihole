@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/mhaii/go-pihole"
 )
@@ -98,7 +99,7 @@ func (c Client) CreateDNSRecord(ctx context.Context, record *DNSRecord) (*DNSRec
 	return record, nil
 }
 
-// GetDNSRecord searches the pihole local DNS records for the passed domain and returns a result if found
+// GetDNSRecord searches the pihole local DNS records for the passed domain and returns first result if found
 func (c Client) GetDNSRecord(ctx context.Context, domain string) (*DNSRecord, error) {
 	if c.tokenClient != nil {
 		record, err := c.tokenClient.LocalDNS.Get(ctx, domain)
@@ -113,18 +114,46 @@ func (c Client) GetDNSRecord(ctx context.Context, domain string) (*DNSRecord, er
 		return record, nil
 	}
 
+	list, err := c.GetDNSRecordList(ctx, domain)
+	if err != nil {
+		return nil, err
+	}
+
+	return list[0], nil
+}
+
+// GetDNSRecordList searches the pihole local DNS records for the passed domain and returns all result if found
+func (c Client) GetDNSRecordList(ctx context.Context, domain string) ([]*DNSRecord, error) {
+	if c.tokenClient != nil {
+		records, err := c.tokenClient.LocalDNS.GetList(ctx, domain)
+		if err != nil {
+			if errors.Is(err, pihole.ErrorLocalDNSNotFound) {
+				return nil, NewNotFoundError(fmt.Sprintf("dns record with domain %q not found", domain))
+			}
+
+			return nil, err
+		}
+
+		return records, nil
+	}
+
 	list, err := c.ListDNSRecords(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, r := range list {
-		if r.Domain == domain {
-			return &r, nil
+	var results []*DNSRecord
+	for _, record := range list {
+		if record.Domain == strings.ToLower(domain) {
+			results = append(results, &record)
 		}
 	}
 
-	return nil, NewNotFoundError(fmt.Sprintf("record %q not found", domain))
+	if len(results) == 0 {
+		return nil, NewNotFoundError(fmt.Sprintf("record %q not found", domain))
+	}
+
+	return results, nil
 }
 
 // DeleteDNSRecord deletes a pihole local DNS record by domain name
@@ -133,26 +162,34 @@ func (c Client) DeleteDNSRecord(ctx context.Context, domain string) error {
 		return c.tokenClient.LocalDNS.Delete(ctx, domain)
 	}
 
-	record, err := c.GetDNSRecord(ctx, domain)
+	records, err := c.GetDNSRecordList(ctx, domain)
 	if err != nil {
 		return err
 	}
 
-	req, err := c.RequestWithSession(ctx, "POST", "/admin/scripts/pi-hole/php/customdns.php", &url.Values{
-		"action": []string{"delete"},
-		"ip":     []string{record.IP},
-		"domain": []string{record.Domain},
-	})
-	if err != nil {
-		return err
-	}
+	for _, record := range records {
+		if err = func() error {
+			req, err := c.RequestWithSession(ctx, "POST", "/admin/scripts/pi-hole/php/customdns.php", &url.Values{
+				"action": []string{"delete"},
+				"ip":     []string{record.IP},
+				"domain": []string{record.Domain},
+			})
+			if err != nil {
+				return err
+			}
 
-	res, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
+			res, err := c.client.Do(req)
+			if err != nil {
+				return err
+			}
 
-	defer res.Body.Close()
+			defer res.Body.Close()
+
+			return nil
+		}(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
